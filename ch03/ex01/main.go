@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math"
+	"os"
 )
 
 const (
@@ -24,22 +25,22 @@ func main() {
 		for j := 0; j < cells; j++ {
 			ax, ay, ok := corner(i+1, j)
 			if !ok {
-				fmt.Errorf("error:nan")
+				fmt.Fprintf(os.Stderr, "error:nan\n")
 				continue
 			}
 			bx, by, ok := corner(i, j)
 			if !ok {
-				fmt.Errorf("error:nan")
+				fmt.Fprintf(os.Stderr, "error:nan\n")
 				continue
 			}
 			cx, cy, ok := corner(i, j+1)
 			if !ok {
-				fmt.Errorf("error:nan")
+				fmt.Fprintf(os.Stderr, "error:nan\n")
 				continue
 			}
 			dx, dy, ok := corner(i+1, j+1)
 			if !ok {
-				fmt.Errorf("error:nan")
+				fmt.Fprintf(os.Stderr, "error:nan\n")
 				continue
 			}
 			fmt.Printf("<polygon points='%g,%g %g,%g %g,%g %g,%g'/>\n",
@@ -62,5 +63,5 @@ func corner(i, j int) (float64, float64, bool) {
 func f(x, y float64) (float64, bool) {
 	r := math.Hypot(x, y)
 	result := math.Sin(r) / r
-	return result, math.IsNaN(result)
+	return result, !math.IsNaN(result) && !math.IsInf(result, 0) && !math.IsInf(result, -1)
 }
