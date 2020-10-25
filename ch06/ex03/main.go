@@ -1,20 +1,5 @@
 package main
 
-import "fmt"
-
-func main() {
-	s := &IntSet{}
-	s.Add(11)
-	s.Add(222)
-	s.Add(3333)
-	fmt.Println(s.Len())
-	s.Remove(222)
-	fmt.Println(s.Len())
-	fmt.Println(s.Copy().Len())
-	s.Clear()
-	fmt.Println(s.Len())
-}
-
 type IntSet struct {
 	words []uint64
 }
@@ -32,6 +17,16 @@ func (s *IntSet) Add(x int) {
 	s.words[word] |= 1 << bit
 }
 
+func (s *IntSet) AddAll(xs ...int) {
+	for _, x := range xs {
+		word, bit := x/64, uint(x%64)
+		for word >= len(s.words) {
+			s.words = append(s.words, 0)
+		}
+		s.words[word] |= 1 << bit
+	}
+}
+
 func (s *IntSet) UnionWith(t *IntSet) {
 	for i, tword := range t.words {
 		if i < len(s.words) {
@@ -40,6 +35,21 @@ func (s *IntSet) UnionWith(t *IntSet) {
 			s.words = append(s.words, tword)
 		}
 	}
+}
+
+func (s *IntSet) IntersectWith(t *IntSet) {
+	for i, sword := range s.words {
+		sword &= t.words[i]
+	}
+	s.words = s.words[:len(t.words)]
+}
+
+// TODO
+func (s *IntSet) DiffernceWith(t *IntSet) {
+}
+
+// TODO
+func (s *IntSet) SymmetricDifference(t *IntSet) {
 }
 
 func (s *IntSet) Len() int {
