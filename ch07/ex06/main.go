@@ -5,8 +5,11 @@ import (
 	"fmt"
 )
 
-func main() {
+var temp = CelsiusFlag("temp", 20.0, "hoge")
 
+func main() {
+	flag.Parse()
+	fmt.Println(*temp)
 }
 
 type celsiusFlag struct {
