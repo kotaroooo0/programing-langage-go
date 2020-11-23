@@ -2,10 +2,8 @@ package orenoftp
 
 import (
 	"bufio"
-	"io/ioutil"
 	"log"
 	"net"
-	"path/filepath"
 	"strings"
 
 	"golang.org/x/exp/errors/fmt"
@@ -20,17 +18,20 @@ type Server struct {
 	Addr string
 }
 
+func NewServer(addr string) *Server {
+	return &Server{
+		Addr: addr,
+	}
+}
+
 func (s *Server) ListenAndServe() error {
 	listener, err := net.Listen("tcp", s.Addr)
 	if err != nil {
 		return err
 	}
-	return s.Serve(listener)
-}
 
-func (s *Server) Serve(l net.Listener) error {
 	for {
-		conn, err := l.Accept()
+		conn, err := listener.Accept()
 		if err != nil {
 			log.Print(err)
 			continue
@@ -43,14 +44,13 @@ func handleConn(c net.Conn) {
 	defer c.Close()
 	log.Println("start handling connection.")
 
-	fmt.Fprint(c, "220 welcome oreno ftp server!\n")
+	fc := NewFtpConn(c, "/Users/kotaroooo0/Documents/.repo/src/github.com/kotaroooo0/programing-language-go", "/")
+	fc.Welcome()
 
-	s := bufio.NewScanner(c)
+	s := bufio.NewScanner(fc.Conn)
 	fmt.Println(s.Text())
-	fmt.Println("hoge")
 	for s.Scan() {
 		input := strings.Fields(s.Text())
-		log.Println(input)
 		if len(input) == 0 {
 			continue
 		}
@@ -59,38 +59,24 @@ func handleConn(c net.Conn) {
 
 		switch command {
 		case "USER":
-			fmt.Fprint(c, "230 User kotaroooo0 logged in, proceed.\n")
-
+			fc.User()
 		case "CWD": // cd
-			// cwd(args)
-			fmt.Fprint(c, "230 "+strings.Join(args, " "))
-
+			fc.Cwd(args)
 		case "LIST": // ls
-			// list(args)
-			target := filepath.Join("public", "/")
-			files, err := ioutil.ReadDir(target)
-			if err != nil {
-				log.Print(err)
-				return
-			}
-			fmt.Fprint(c, "150 gasgkhaskgali\n")
-
-			for _, file := range files {
-				_, err := fmt.Fprint(c, file.Name(), "\n")
-				if err != nil {
-					log.Print(err)
-				}
-			}
-			fmt.Fprint(c, "230 "+strings.Join(args, " "))
+			fc.List(args)
+		case "PWD":
+			fc.Pwd()
+		case "PORT":
+			fc.Port(args)
+		case "RETR":
+			fc.Retr(args)
+		case "TYPE":
+			fc.Type(args)
 		case "QUIT":
-			// quit()
-			fmt.Fprint(c, "221 BYE.\n")
+			fc.Quit()
 		default:
+			log.Println(command)
 			fmt.Fprint(c, "invalid command\n")
 		}
 	}
-
-	// if s.Err() != nil {
-	// 	log.Print(s.Err())
-	// }
 }
