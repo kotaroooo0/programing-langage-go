@@ -18,8 +18,8 @@ type FtpConn struct {
 	DataPort string
 }
 
-func NewFtpConn(c net.Conn, rootDir, workDir string) *FtpConn {
-	return &FtpConn{
+func NewFtpConn(c net.Conn, rootDir, workDir string) FtpConn {
+	return FtpConn{
 		Conn:    c,
 		RootDir: rootDir,
 		WorkDir: workDir,

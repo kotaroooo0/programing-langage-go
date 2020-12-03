@@ -4,13 +4,14 @@ import (
 	"bufio"
 	"log"
 	"net"
+	"os"
 	"strings"
 
 	"golang.org/x/exp/errors/fmt"
 )
 
 // ディレクトリを変更する cd
-// ディレクトリを列挙する ls
+// ディレクトリを列挙する ls <- LISTじゃなくてEPRT、LPRTが送られれる
 // ファイルの内容を送り出す get
 // 接続を閉じる close
 
@@ -36,15 +37,19 @@ func (s *Server) ListenAndServe() error {
 			log.Print(err)
 			continue
 		}
-		go handleConn(conn)
+		wd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		fc := NewFtpConn(conn, wd, "/")
+		go handleConn(fc)
 	}
 }
 
-func handleConn(c net.Conn) {
-	defer c.Close()
+func handleConn(fc FtpConn) {
+	defer fc.Conn.Close()
 	log.Println("start handling connection.")
 
-	fc := NewFtpConn(c, "/Users/kotaroooo0/Documents/.repo/src/github.com/kotaroooo0/programing-language-go", "/")
 	fc.Welcome()
 
 	s := bufio.NewScanner(fc.Conn)
@@ -76,7 +81,7 @@ func handleConn(c net.Conn) {
 			fc.Quit()
 		default:
 			log.Println(command)
-			fmt.Fprint(c, "invalid command\n")
+			fmt.Fprint(fc.Conn, "invalid command\n")
 		}
 	}
 }
