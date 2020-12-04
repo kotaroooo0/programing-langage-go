@@ -90,7 +90,7 @@ func (c *FtpConn) List(args []string) {
 
 func (c *FtpConn) Pwd() {
 	path := filepath.Join(c.RootDir, c.WorkDir)
-	fmt.Fprint(c.Conn, "257 "+path+" is your current location\n")
+	fmt.Fprint(c.Conn, "257 \""+path+"\" is your current directory\n")
 }
 
 func (c *FtpConn) Port(args []string) {

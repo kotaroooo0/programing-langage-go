@@ -81,7 +81,7 @@ func handleConn(fc FtpConn) {
 			fc.Quit()
 		default:
 			log.Println(command)
-			fmt.Fprint(fc.Conn, "invalid command\n")
+			fmt.Fprint(fc.Conn, "503 not supported command\n")
 		}
 	}
 }
