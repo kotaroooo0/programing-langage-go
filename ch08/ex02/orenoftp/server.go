@@ -78,12 +78,10 @@ func handleConn(fc FtpConn) {
 			fc.Pwd()
 		case "PORT":
 			fc.Port(args)
-		case "RETR":
-			fc.Retr(args)
 		case "QUIT":
 			fc.Quit()
 		default:
-			log.Println(command)
+			log.Println(fmt.Sprintf("unsupported command: %s", command))
 			fmt.Fprint(fc.Conn, "502 Command not implemented.\n")
 		}
 	}
