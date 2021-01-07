@@ -66,6 +66,10 @@ func handleConn(fc FtpConn) {
 		switch command {
 		case "USER":
 			fc.User()
+		case "PASS":
+			fc.Pass()
+		case "SYST":
+			fc.Type()
 		case "CWD": // cd
 			fc.Cwd(args)
 		case "LIST": // ls
@@ -76,13 +80,11 @@ func handleConn(fc FtpConn) {
 			fc.Port(args)
 		case "RETR":
 			fc.Retr(args)
-		case "TYPE":
-			fc.Type(args)
 		case "QUIT":
 			fc.Quit()
 		default:
 			log.Println(command)
-			fmt.Fprint(fc.Conn, "503 not supported command\n")
+			fmt.Fprint(fc.Conn, "502 Command not implemented.\n")
 		}
 	}
 }
