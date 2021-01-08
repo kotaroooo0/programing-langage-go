@@ -1,12 +1,15 @@
 package orenoftp
 
 import (
+	"encoding/binary"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 )
 
 type FtpConn struct {
@@ -25,7 +28,7 @@ func NewFtpConn(c net.Conn, rootDir, workDir string) FtpConn {
 }
 
 func (c *FtpConn) Welcome() {
-	fmt.Fprint(c.Conn, "220 welcome oreno ftp server!\n")
+	fmt.Fprint(c.Conn, "220 welcome oreno ftp server.\n")
 }
 
 func (c *FtpConn) User() {
@@ -116,6 +119,50 @@ func (c *FtpConn) Port(args []string) {
 
 	port := p1<<8 + p2
 	c.DataPort = fmt.Sprintf("%d.%d.%d.%d:%d", h1, h2, h3, h4, port)
+	fmt.Fprint(c.Conn, "200 OK.\n")
+}
+
+func (c *FtpConn) Lprt(args []string) {
+	if len(args) != 1 {
+		fmt.Fprint(c.Conn, "500 BAD REQUEST.\n")
+		return
+	}
+
+	parts := strings.Split(args[0], ",")
+
+	addressFamily, _ := strconv.Atoi(parts[0])
+	if addressFamily != 4 {
+		fmt.Fprint(c.Conn, "500 BAD REQUEST.\n")
+		// return
+	}
+
+	addressLength, _ := strconv.Atoi(parts[1])
+	if addressLength != 4 {
+		fmt.Fprint(c.Conn, "500 BAD REQUEST.\n")
+		// return
+	}
+
+	host := strings.Join(parts[2:2+addressLength], ".")
+
+	portLength, _ := strconv.Atoi(parts[2+addressLength])
+	portAddress := parts[3+addressLength : 3+addressLength+portLength]
+
+	// Convert string[] to byte[]
+	portBytes := make([]byte, portLength)
+	for i := range portAddress {
+		p, _ := strconv.Atoi(portAddress[i])
+		portBytes[i] = byte(p)
+	}
+
+	// convert the bytes to an int
+	port := int(binary.BigEndian.Uint16(portBytes))
+
+	log.Println(host)
+	log.Println(port)
+	// port := p1 << 8
+	log.Println(len(args))
+	log.Println(args)
+	c.DataPort = "127.0.0.1:" + strconv.Itoa(port)
 	fmt.Fprint(c.Conn, "200 OK.\n")
 }
 

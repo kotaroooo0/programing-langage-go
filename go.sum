@@ -1,0 +1,3 @@
+golang.org/x/exp v0.0.0-20201229011636-eab1b5eb1a03 h1:XlAInxBYX5nBofPaY51uv/x9xmRgZGr/lDOsePd2AcE=
+golang.org/x/exp/errors v0.0.0-20201229011636-eab1b5eb1a03 h1:A4FptnpJ/z3jSXVmYXbcrFGO2wsfwGqel7BJcgT99hU=
+golang.org/x/exp/errors v0.0.0-20201229011636-eab1b5eb1a03/go.mod h1:YgqsNsAu4fTvlab/7uiYK9LJrCIzKg/NiZUIH1/ayqo=
