@@ -3,6 +3,7 @@ package orenoftp
 import (
 	"encoding/binary"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net"
@@ -45,16 +46,16 @@ func (c *FtpConn) Pass() {
 
 func (c *FtpConn) Cwd(args []string) {
 	if len(args) != 1 {
-		fmt.Fprint(c.Conn, "500 BAD REQUEST.\n")
+		c.respond("500 bad request.")
 		return
 	}
-
 	workDir := filepath.Join(c.WorkDir, args[0])
 	absPath := filepath.Join(c.RootDir, workDir)
+
 	_, err := os.Stat(absPath)
 	if err != nil {
 		log.Println(err)
-		fmt.Fprint(c.Conn, "500 BAD REQUEST.\n")
+		c.respond("500 bad request.")
 		return
 	}
 	c.WorkDir = workDir
@@ -72,7 +73,7 @@ func (c *FtpConn) List(args []string) {
 	files, err := ioutil.ReadDir(target)
 	if err != nil {
 		log.Println(err)
-		fmt.Fprint(c.Conn, "500 BAD REQUEST.\n")
+		c.respond("500 bad request.")
 		return
 	}
 	fmt.Fprint(c.Conn, "150 File status okay; about to open data connection.\n")
@@ -80,7 +81,7 @@ func (c *FtpConn) List(args []string) {
 	dataConn, err := c.dataConn()
 	if err != nil {
 		log.Println(err)
-		fmt.Fprint(c.Conn, "500 BAD REQUEST.\n")
+		c.respond("500 bad request.")
 		return
 	}
 	defer dataConn.Close()
@@ -89,14 +90,14 @@ func (c *FtpConn) List(args []string) {
 		_, err := fmt.Fprint(dataConn, file.Name(), "\n")
 		if err != nil {
 			log.Println(err)
-			fmt.Fprint(c.Conn, "500 BAD REQUEST.\n")
+			c.respond("500 bad request.")
 			return
 		}
 	}
 	_, err = fmt.Fprintf(dataConn, "\n")
 	if err != nil {
 		log.Println(err)
-		fmt.Fprint(c.Conn, "500 BAD REQUEST.\n")
+		c.respond("500 bad request.")
 		return
 	}
 
@@ -110,44 +111,30 @@ func (c *FtpConn) Pwd() {
 
 func (c *FtpConn) Port(args []string) {
 	if len(args) != 1 {
-		fmt.Fprint(c.Conn, "500 BAD REQUEST.\n")
+		c.respond("500 bad request.")
 		return
 	}
 
 	var h1, h2, h3, h4, p1, p2 int
 	_, err := fmt.Sscanf(args[0], "%d,%d,%d,%d,%d,%d", &h1, &h2, &h3, &h4, &p1, &p2)
 	if err != nil {
-		fmt.Fprint(c.Conn, "500 BAD REQUEST.\n")
+		c.respond("500 bad request.")
 		return
 	}
 
 	port := p1<<8 + p2
 	c.DataPort = fmt.Sprintf("%d.%d.%d.%d:%d", h1, h2, h3, h4, port)
-	fmt.Fprint(c.Conn, "200 OK.\n")
+	c.respond("200 Command okay.")
 }
 
 func (c *FtpConn) Lprt(args []string) {
 	if len(args) != 1 {
-		fmt.Fprint(c.Conn, "500 BAD REQUEST.\n")
+		c.respond("500 bad request.")
 		return
 	}
 
 	parts := strings.Split(args[0], ",")
-
-	addressFamily, _ := strconv.Atoi(parts[0])
-	if addressFamily != 4 {
-		fmt.Fprint(c.Conn, "500 BAD REQUEST.\n")
-		// return
-	}
-
 	addressLength, _ := strconv.Atoi(parts[1])
-	if addressLength != 4 {
-		fmt.Fprint(c.Conn, "500 BAD REQUEST.\n")
-		// return
-	}
-
-	host := strings.Join(parts[2:2+addressLength], ".")
-
 	portLength, _ := strconv.Atoi(parts[2+addressLength])
 	portAddress := parts[3+addressLength : 3+addressLength+portLength]
 
@@ -160,18 +147,61 @@ func (c *FtpConn) Lprt(args []string) {
 
 	// convert the bytes to an int
 	port := int(binary.BigEndian.Uint16(portBytes))
-
-	log.Println(host)
-	log.Println(port)
-	// port := p1 << 8
-	log.Println(len(args))
-	log.Println(args)
-	c.DataPort = "127.0.0.1:" + strconv.Itoa(port)
-	fmt.Fprint(c.Conn, "200 OK.\n")
+	c.DataPort = fmt.Sprintf("[0:0:0:0:0:0:0:1]:%d", port)
+	c.respond("200 Command okay.")
 }
 
 func (c *FtpConn) Type() {
 	c.respond("215 UNIX system type.")
+}
+
+func (c *FtpConn) Retr(args []string) {
+	if len(args) != 1 {
+		c.respond("500 bad request.")
+		return
+	}
+
+	path := filepath.Join(c.RootDir, c.WorkDir, args[0])
+	file, _ := os.Open(path)
+	fmt.Fprint(c.Conn, "150 File status okay; about to open data connection.\n")
+	dataConn, err := c.dataConn()
+	if err != nil {
+		log.Println(err)
+		c.respond("500 bad request.")
+		return
+	}
+	defer dataConn.Close()
+
+	io.Copy(dataConn, file)
+	c.respond("200 Command okay.")
+}
+
+func (c *FtpConn) Stor(args []string) {
+	if len(args) != 1 {
+		c.respond("500 bad request.")
+		return
+	}
+	dataConn, err := c.dataConn()
+	defer dataConn.Close()
+	if err != nil {
+		log.Println(err)
+		c.respond("500 bad request.")
+		return
+	}
+	data, err := ioutil.ReadAll(dataConn)
+	log.Println(data)
+	if err != nil {
+		log.Println(err)
+		c.respond("500 bad request.")
+		return
+	}
+	path := filepath.Join(c.RootDir, c.WorkDir, args[0])
+	if err := ioutil.WriteFile(path, data, os.ModePerm); err != nil {
+		log.Println(err)
+		c.respond("500 bad request.")
+		return
+	}
+	c.respond("221 Service closing control connection.")
 }
 
 func (c *FtpConn) Quit() {
@@ -179,7 +209,6 @@ func (c *FtpConn) Quit() {
 }
 
 func (c *FtpConn) dataConn() (net.Conn, error) {
-	// fmt.Println(c.Da)
 	conn, err := net.Dial("tcp", c.DataPort)
 	if err != nil {
 		return nil, err

@@ -49,7 +49,7 @@ func handleConn(c net.Conn) {
 		log.Fatal(err)
 	}
 
-	fc := NewFtpConn(c, wd, "/")
+	fc := NewFtpConn(c, "/", wd)
 	fc.Welcome()
 
 	s := bufio.NewScanner(fc.Conn)
@@ -76,8 +76,14 @@ func handleConn(c net.Conn) {
 			fc.Pwd()
 		case "PORT":
 			fc.Port(args)
-		// case "QUIT":
-		// 	fc.Quit()
+		case "LPRT":
+			fc.Lprt(args)
+		case "RETR":
+			fc.Retr(args)
+		case "STOR":
+			fc.Stor(args)
+		case "QUIT":
+			fc.Quit()
 		default:
 			log.Println(fmt.Sprintf("unsupported command: %s", command))
 			fmt.Fprint(fc.Conn, "502 Command not implemented.\n")
