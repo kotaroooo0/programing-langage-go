@@ -181,6 +181,7 @@ func (c *FtpConn) Stor(args []string) {
 		c.respond("500 bad request.")
 		return
 	}
+	c.respond("150 File status okay; about to open data connection.")
 	dataConn, err := c.dataConn()
 	defer dataConn.Close()
 	if err != nil {
