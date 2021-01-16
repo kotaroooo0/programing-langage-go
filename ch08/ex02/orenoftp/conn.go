@@ -27,16 +27,20 @@ func NewFtpConn(c net.Conn, rootDir, workDir string) FtpConn {
 	}
 }
 
+func (c *FtpConn) respond(s string) {
+	fmt.Fprint(c.Conn, s, "\n")
+}
+
 func (c *FtpConn) Welcome() {
-	fmt.Fprint(c.Conn, "220 welcome oreno ftp server.\n")
+	c.respond("220 Service ready for new user.")
 }
 
 func (c *FtpConn) User() {
-	fmt.Fprint(c.Conn, "331 ok, set password.\n")
+	c.respond("331 ok, set password.")
 }
 
 func (c *FtpConn) Pass() {
-	fmt.Fprint(c.Conn, "230 User kotaroooo0 logged in, proceed.\n")
+	c.respond("230 User logged in, proceed.")
 }
 
 func (c *FtpConn) Cwd(args []string) {
@@ -167,7 +171,7 @@ func (c *FtpConn) Lprt(args []string) {
 }
 
 func (c *FtpConn) Type() {
-	fmt.Fprint(c.Conn, "215 UNIX system type.\n")
+	c.respond("215 UNIX system type.")
 }
 
 func (c *FtpConn) Quit() {

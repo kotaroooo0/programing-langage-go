@@ -38,23 +38,21 @@ func (s *Server) ListenAndServe() error {
 			log.Print(err)
 			continue
 		}
-		wd, err := os.Getwd()
-		if err != nil {
-			return err
-		}
-		fc := NewFtpConn(conn, wd, "/")
-		go handleConn(fc)
+		go handleConn(conn)
 	}
 }
 
-func handleConn(fc FtpConn) {
-	defer fc.Conn.Close()
-	log.Println("start handling connection.")
+func handleConn(c net.Conn) {
+	defer c.Close()
+	wd, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
 
+	fc := NewFtpConn(c, wd, "/")
 	fc.Welcome()
 
 	s := bufio.NewScanner(fc.Conn)
-	fmt.Println(s.Text())
 	for s.Scan() {
 		input := strings.Fields(s.Text())
 		if len(input) == 0 {
@@ -78,8 +76,8 @@ func handleConn(fc FtpConn) {
 			fc.Pwd()
 		case "PORT":
 			fc.Port(args)
-		case "QUIT":
-			fc.Quit()
+		// case "QUIT":
+		// 	fc.Quit()
 		default:
 			log.Println(fmt.Sprintf("unsupported command: %s", command))
 			fmt.Fprint(fc.Conn, "502 Command not implemented.\n")
