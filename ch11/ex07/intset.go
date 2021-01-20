@@ -59,14 +59,6 @@ func (s *IntSet) IntersectWith(t *IntSet) {
 	s.words = s.words[:len(t.words)]
 }
 
-func (s *IntSet) Len() int {
-	l := 0
-	for _, word := range s.words {
-		l += popCount(word)
-	}
-	return l
-}
-
 func (s *IntSet) Remove(x int) {
 	word, bit := x/64, uint(x%64)
 	if word > len(s.words) {
